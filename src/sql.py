@@ -14,7 +14,22 @@ class sql():
 
         self.init_meta()
         self.parser()
-
+    def sum(self,data):
+        ret = 0
+        for i in data : ret+=i
+        return ret
+    def avg(self,data):
+        return sum(data)/len(data)
+    def max(self,data):
+        mx = float("-inf")
+        for i in data:
+            mx = i if i > mx else mx
+        return mx
+    def min(self,data):
+        mn = float("inf")
+        for i in data:
+            mn = i if i < mn else mn
+        return mn
     def init_meta(self):
         ''' inititalize the meta dictionary with metadata txt file '''
         content = open("../files/metadata.txt","r").readlines()
@@ -27,7 +42,6 @@ class sql():
                     if not tablename : 
                         tablename = lines[i]
                         self.meta[tablename] = []
-                        self.table_field[tablename] = []
                     else: self.meta[tablename].append(lines[i])
                     i += 1
 
@@ -60,15 +74,14 @@ class sql():
         tables = [ i.strip()  for i in tables]
         for i in tables:
             reader = csv.reader(open(self.db_dir +i+ '.csv'))
+            temp ={}
+            for j in self.meta[i]:
+                temp[j] = []
             for row in reader:
-                temp ={}
                 for j in range(len(self.meta[i])):
-                    temp[self.meta[i][j]] = row[j]
-                self.table_field[i].append(temp)
-        
+                    temp[self.meta[i][j]].append(row[j])
+            self.table_field[i] = temp
         print(self.table_field)
-
-
 
 # Code starts from here
 if len(sys.argv)<2 :
