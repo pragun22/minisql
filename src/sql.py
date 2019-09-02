@@ -145,19 +145,52 @@ class sql():
             for i in tables:
                 for j in self.meta[i]:
                     row.append(i+'.'+j)
-                    col.append(True if j in fields else False)
+                    flag = False
+                    for fd in fields:
+                       if j in fd : flag = True 
+                    col.append(flag)
             Output.append(row)
             if(fields[0]=='*'):
-                for i in range(len(col)): col[i] = True        
-            runtable = copy.deepcopy(self.mat[tables[0]])
-            for i in range(1, len(tables)):
-                new_mat = []
-                for j in runtable:
-                    for p in self.mat[tables[i]]:
-                        new_mat.append(j+p)    
-                runtable = copy.deepcopy(new_mat)
-            for i in runtable:
-                Output.append(i)
+                for i in range(len(col)): col[i] = True
+            
+            func_flag = False
+
+            for i in fields:
+                if '(' in i:
+                    func_flag = True
+            if func_flag :
+                for i in fields:
+                    if '(' not in i:
+                        print("\033[91mSyntax Error:\033[00m")
+                        print("check fields")
+                        exit(0)
+            if not func_flag:
+                runtable = copy.deepcopy(self.mat[tables[0]])
+                for i in range(1, len(tables)):
+                    new_mat = []
+                    for j in runtable:
+                        for p in self.mat[tables[i]]:
+                            new_mat.append(j+p)    
+                    runtable = copy.deepcopy(new_mat)
+                for i in runtable:
+                    Output.append(i)
+            else:
+                row = []
+                for ind,key in enumerate(Output[0]):
+                    tb = key.split('.')[0]
+                    fld = key.split('.')[1]
+                    fn = ""
+                    for i in fields:
+                        if fld in i:
+                            fn = i[:3].lower()
+                            break
+                    if fn == 'max' : val = self.max(self.table_field[tb][fld])
+                    if fn == 'min' : val = self.min(self.table_field[tb][fld])
+                    if fn == 'sum' : val = self.sum(self.table_field[tb][fld])
+                    if fn == 'avg' : val = self.avg(self.table_field[tb][fld])
+                    if fn == "" : val = 0
+                    row.append(val)
+                Output.append(row)    
             for i in range(len(Output)):
                 flag = False
                 for ind, j in enumerate(Output[i]):
