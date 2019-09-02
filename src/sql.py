@@ -73,25 +73,29 @@ class sql():
         self.distinct = True if self.toks[0] == 'distinct' else False
         tables = self.toks[3].split(',') if self.distinct else self.toks[2].split(',')
         tables = [ i.strip()  for i in tables]
-        for i in tables:
-            reader = csv.reader(open(self.db_dir +i+ '.csv'))
-            temp = {}
-            for j in self.meta[i]:
-                temp[j] = []
-            for row in reader:
-                for j in range(len(self.meta[i])):
-                    temp[self.meta[i][j]].append(row[j])
-            self.table_field[i] = temp
-
+        try:
+            for i in tables:
+                reader = csv.reader(open(self.db_dir +i+ '.csv'))
+                temp = {}
+                for j in self.meta[i]:
+                    temp[j] = []
+                for row in reader:
+                    for j in range(len(self.meta[i])):
+                        temp[self.meta[i][j]].append(row[j])
+                self.table_field[i] = temp
+        except Exception as e:
+            print("Something Wrong with query")
+            print("Error: ",e)
+            exit()
         # print(self.table_field['table1']['A'],sep='\n')
+        fields = self.toks[0].split(',') if not self.distinct else self.toks[1].split(',')
+        fields = [ i.strip() for i in fields ]
+        func_flag = False
+        for i in self.func : 
+            if i in fields[0].lower(): func_flag = True
         if len(tables) ==1 :
             tableName = tables[0]
-            fields = self.toks[0].split(',') if not self.distinct else self.toks[1].split(',')
-            fields = [ i.strip() for i in fields ]
             fields = self.meta[tableName] if fields[0]=='*' else fields
-            func_flag = False
-            for i in self.func : 
-                if i in fields[0]: func_flag = True
 
             try:
                 Output = []
@@ -121,11 +125,61 @@ class sql():
                 
                 for i in range(len(Output)):
                     for j in Output[i]:
-                        print(j,end=', ')
+                        print(j,end=(', ' if j != Output[i][-1] else ' '))
                     print("")
             except Exception as e :
                 print("\033[91mField Not Found!! check your query\033[00m")
                 print("Error: ", e)
+        else:
+                
+            sets = [set() for i in range(len(tables))]
+            for ind, key in enumerate(tables):
+                for j in self.meta[key]:
+                    sets[ind].add(j)
+            common_field = sets[0]
+            all_field = sets[0]
+            for i in range(1, len(tables)):
+                common_field = common_field & sets[i]
+                all_field = all_field | sets[i]
+            com_var = [set() for i in range(len(common_field))]
+            for table in tables:
+                for ind, p in enumerate(common_field):
+                    for j in self.table_field[table][p]:
+                        com_var[ind].add(j)
+            # print(com_var)    
+            fin_table = []
+            row  = []
+            fields = all_field if fields[0]=='*' else fields
+            for i in all_field:
+                for j in tables:
+                    if i in self.table_field[j]:
+                        row.append(j+'.'+i)
+                        break
+            fin_table.append(row)
+            for i in range(len(com_var[0])):
+                row = []
+                for j in all_field:
+                    for p in tables:
+                        if j in self.table_field[p]:
+                            row.append(self.table_field[p][j][i])
+                            break
+                fin_table.append(row)
+            # for i in range(len(fin_table)):
+            #     for j in fin_table[i]:
+            #         print(j,end=(', ' if j != fin_table[i][-1] else ' '))
+            #     print("")
+            Output = []
+            for i in range(len(fin_table)):
+                row = []
+                for ind, j in enumerate(fin_table[i]):
+                    if fin_table[0][ind][-1] in fields:
+                        row.append(j)
+                Output.append(row)
+            for i in range(len(Output)):
+                for j in Output[i]:
+                    print(j,end=(', ' if j != Output[i][-1] else ' '))
+                print("")
+
 
 # Code begins from here
 if len(sys.argv) < 2 :
