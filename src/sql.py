@@ -1,6 +1,7 @@
 import sys
 import sqlparse
 import csv
+import copy 
 class sql():
 
     def __init__(self, query):
@@ -10,6 +11,8 @@ class sql():
         self.meta ={}
         self.table_field = {}
         self.distinct = False
+        self.where = False
+        self.mat = {}
         self.db_dir = "../files/" 
         self.func = ['max','min','avg','sum']
 
@@ -69,8 +72,9 @@ class sql():
             temp = self.toks[i].lower()
             if temp == 'distinct' or temp == 'from' : self.toks[i] = temp
             
-        # print(self.toks)
         self.distinct = True if self.toks[0] == 'distinct' else False
+        if len(self.toks) > (4 if self.distinct else 3):
+            self.where = True
         tables = self.toks[3].split(',') if self.distinct else self.toks[2].split(',')
         tables = [ i.strip()  for i in tables]
         try:
@@ -79,7 +83,9 @@ class sql():
                 temp = {}
                 for j in self.meta[i]:
                     temp[j] = []
+                self.mat[i] = []
                 for row in reader:
+                    self.mat[i].append(row)
                     for j in range(len(self.meta[i])):
                         temp[self.meta[i][j]].append(row[j])
                 self.table_field[i] = temp
@@ -132,31 +138,33 @@ class sql():
         else:
             Output = []
             row = []
+            col = []
+            if len(tables) != len(set(tables)):
+                print("Error : table names can not be repeated")
+                exit(0)
             for i in tables:
                 for j in self.meta[i]:
                     row.append(i+'.'+j)
-            Output.append(row)        
-            ent1 = len(self.table_field[tables[0]][self.meta[tables[0]][0]]) if not func_flag else 1
-            ent2 = len(self.table_field[tables[1]][self.meta[tables[1]][0]]) if not func_flag else 1
-            f1 = len(self.meta[tables[0]])
-            f2 = len(self.meta[tables[1]])
-            col = [False for i in range(f1+f2)] if fields[0]!='*' else [True for i in range(f1+f2)]
-            for ind, val in enumerate(self.meta[tables[0]]):
-                if val in fields: col[ind] = True                
-            for ind, val in enumerate(self.meta[tables[1]]):
-                if val in fields: col[f1+ind] = True                
-            for i in range(ent1):
-                for j in range(ent2):
-                    row = []
-                    for p in self.meta[tables[0]]:
-                        row.append(self.table_field[tables[0]][p][i])
-                    for p in self.meta[tables[1]]:
-                        row.append(self.table_field[tables[1]][p][j])
-                    Output.append(row)
+                    col.append(True if j in fields else False)
+            Output.append(row)
+            if(fields[0]=='*'):
+                for i in range(len(col)): col[i] = True        
+            runtable = copy.deepcopy(self.mat[tables[0]])
+            for i in range(1, len(tables)):
+                new_mat = []
+                for j in runtable:
+                    for p in self.mat[tables[i]]:
+                        new_mat.append(j+p)    
+                runtable = copy.deepcopy(new_mat)
+            for i in runtable:
+                Output.append(i)
             for i in range(len(Output)):
+                flag = False
                 for ind, j in enumerate(Output[i]):
-                    if col[ind] : print(j,end=(', ' if j != Output[i][-1] else ' '))
-                print("")  
+                    if col[ind] :
+                        print(j,end=(', '))
+                        flag = True
+                    if flag and ind == len(col)-1 : print("")
 
 # Code begins from here
 if len(sys.argv) < 2 :
