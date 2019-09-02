@@ -2,6 +2,7 @@ import sys
 import sqlparse
 import csv
 import copy 
+from collections import defaultdict 
 class sql():
 
     def __init__(self, query):
@@ -117,20 +118,27 @@ class sql():
                 row.append(temp)
                 flag = False
                 for fd in fields:
+                    if func_flag:
+                        id1 = fd.find('(')
+                        id2 = fd.find(')')
+                        fd = fd[id1+1:id2]
                     if fd in temp : flag = True 
                 col.append(flag)
         Output.append(row)
-        for i in fields:
-            flg = False
-            for j in Output[0]:
-                if i in j : flg = True
-            if not flg:
-                print("Error: Field not present")
-                exit(0)
         if(fields[0]=='*'):
             for i in range(len(col)): col[i] = True
-        
-
+        else:
+            for i in fields:
+                flg = False
+                if func_flag:
+                    id1 = i.find('(')
+                    id2 = i.find(')')
+                    i = i[id1+1:id2]
+                for j in Output[0]:
+                    if i in j : flg = True
+                if not flg:
+                    print("Error: Field not present")
+                    exit(0)
         if not func_flag:
             runtable = copy.deepcopy(self.mat[tables[0]])
             for i in range(1, len(tables)):
@@ -142,14 +150,16 @@ class sql():
             for i in runtable:
                 Output.append(i)
         else:
+            flag_bool = defaultdict(lambda : False)
             row = []
             for ind,key in enumerate(Output[0]):
                 tb = key.split('.')[0]
                 fld = key.split('.')[1]
                 fn = ""
-                for i in fields:
-                    if fld in i:
+                for idx, i in enumerate(fields):
+                    if fld in i and flag_bool[i] == False and col[ind]==True:
                         fn = i[:3].lower()
+                        flag_bool[i] = True
                         break
                 if fn == 'max' : val = self.max(self.table_field[tb][fld])
                 if fn == 'min' : val = self.min(self.table_field[tb][fld])
