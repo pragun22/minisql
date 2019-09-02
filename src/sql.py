@@ -93,112 +93,78 @@ class sql():
             print("Something Wrong with query")
             print("Error: ",e)
             exit()
-        # print(self.table_field['table1']['A'],sep='\n')
         fields = self.toks[0].split(',') if not self.distinct else self.toks[1].split(',')
         fields = [ i.strip() for i in fields ]
         func_flag = False
-        for i in self.func : 
-            if i in fields[0].lower(): func_flag = True
-        if len(tables) ==1 :
-            tableName = tables[0]
-            fields = self.meta[tableName] if fields[0]=='*' else fields
-            try:
-                Output = []
-                entries = len(self.table_field[tableName][fields[0]]) if not func_flag else 1
-                row = []
-                for i in fields:
-                    row.append(tableName+'.'+i)
-                Output.append(row)
-                if func_flag:
-                    row = []
-                    for i in fields:
-                        fn = i[:3].lower()
-                        fld = i[4]
-                        # print(fn)
-                        if fn == 'max' : val = self.max(self.table_field[tableName][fld])
-                        if fn == 'min' : val = self.min(self.table_field[tableName][fld])
-                        if fn == 'sum' : val = self.sum(self.table_field[tableName][fld])
-                        if fn == 'avg' : val = self.avg(self.table_field[tableName][fld])
-                        row.append(val)       
-                    Output.append(row)
-                else:
-                    for i in range(entries):
-                        row = []
-                        for j in fields:
-                            row.append(self.table_field[tableName][j][i])
-                        Output.append(row)    
-                
-                for i in range(len(Output)):
-                    for j in Output[i]:
-                        print(j,end=(', ' if j != Output[i][-1] else ' '))
-                    print("")
-            except Exception as e :
-                print("\033[91mField Not Found!! check your query\033[00m")
-                print("Error: ", e)
-        else:
-            Output = []
-            row = []
-            col = []
-            if len(tables) != len(set(tables)):
-                print("Error : table names can not be repeated")
-                exit(0)
-            for i in tables:
-                for j in self.meta[i]:
-                    row.append(i+'.'+j)
-                    flag = False
-                    for fd in fields:
-                       if j in fd : flag = True 
-                    col.append(flag)
-            Output.append(row)
-            if(fields[0]=='*'):
-                for i in range(len(col)): col[i] = True
-            
-            func_flag = False
-
+        for i in fields:
+            if '(' in i:
+                func_flag = True
+        if func_flag :  
             for i in fields:
-                if '(' in i:
-                    func_flag = True
-            if func_flag :
-                for i in fields:
-                    if '(' not in i:
-                        print("\033[91mSyntax Error:\033[00m")
-                        print("check fields")
-                        exit(0)
-            if not func_flag:
-                runtable = copy.deepcopy(self.mat[tables[0]])
-                for i in range(1, len(tables)):
-                    new_mat = []
-                    for j in runtable:
-                        for p in self.mat[tables[i]]:
-                            new_mat.append(j+p)    
-                    runtable = copy.deepcopy(new_mat)
-                for i in runtable:
-                    Output.append(i)
-            else:
-                row = []
-                for ind,key in enumerate(Output[0]):
-                    tb = key.split('.')[0]
-                    fld = key.split('.')[1]
-                    fn = ""
-                    for i in fields:
-                        if fld in i:
-                            fn = i[:3].lower()
-                            break
-                    if fn == 'max' : val = self.max(self.table_field[tb][fld])
-                    if fn == 'min' : val = self.min(self.table_field[tb][fld])
-                    if fn == 'sum' : val = self.sum(self.table_field[tb][fld])
-                    if fn == 'avg' : val = self.avg(self.table_field[tb][fld])
-                    if fn == "" : val = 0
-                    row.append(val)
-                Output.append(row)    
-            for i in range(len(Output)):
+                if '(' not in i:
+                    print("\033[91mSyntax Error:\033[00m")
+                    print("check fields")
+                    exit(0)
+        Output = []
+        row = []
+        col = []
+        if len(tables) != len(set(tables)):
+            print("Error : table names can not be repeated")
+            exit(0)
+        for i in tables:
+            for j in self.meta[i]:
+                temp = i + '.' + j
+                row.append(temp)
                 flag = False
-                for ind, j in enumerate(Output[i]):
-                    if col[ind] :
-                        print(j,end=(', '))
-                        flag = True
-                    if flag and ind == len(col)-1 : print("")
+                for fd in fields:
+                    if fd in temp : flag = True 
+                col.append(flag)
+        Output.append(row)
+        for i in fields:
+            flg = False
+            for j in Output[0]:
+                if i in j : flg = True
+            if not flg:
+                print("Error: Field not present")
+                exit(0)
+        if(fields[0]=='*'):
+            for i in range(len(col)): col[i] = True
+        
 
+        if not func_flag:
+            runtable = copy.deepcopy(self.mat[tables[0]])
+            for i in range(1, len(tables)):
+                new_mat = []
+                for j in runtable:
+                    for p in self.mat[tables[i]]:
+                        new_mat.append(j+p)    
+                runtable = copy.deepcopy(new_mat)
+            for i in runtable:
+                Output.append(i)
+        else:
+            row = []
+            for ind,key in enumerate(Output[0]):
+                tb = key.split('.')[0]
+                fld = key.split('.')[1]
+                fn = ""
+                for i in fields:
+                    if fld in i:
+                        fn = i[:3].lower()
+                        break
+                if fn == 'max' : val = self.max(self.table_field[tb][fld])
+                if fn == 'min' : val = self.min(self.table_field[tb][fld])
+                if fn == 'sum' : val = self.sum(self.table_field[tb][fld])
+                if fn == 'avg' : val = self.avg(self.table_field[tb][fld])
+                if fn == "" : val = 0
+                row.append(val)
+            Output.append(row)    
+        for i in range(len(Output)):
+            flag = False
+            for ind, j in enumerate(Output[i]):
+                if col[ind] :
+                    print(j,end=(', '))
+                    flag = True
+                if flag and ind == len(col)-1 : print("")
 # Code begins from here
 if len(sys.argv) < 2 :
     print("Wrong Syntax")
@@ -206,9 +172,43 @@ if len(sys.argv) < 2 :
 query = ' '.join(sys.argv[1:])
 sql(query)
 
-
-
 '''Use Later'''
+        # if len(tables) == 10 :
+        #     tableName = tables[0]
+        #     fields = self.meta[tableName] if fields[0]=='*' else fields
+        #     try:
+        #         Output = []
+        #         entries = len(self.table_field[tableName][fields[0]]) if not func_flag else 1
+        #         row = []
+        #         for i in fields:
+        #             row.append(tableName+'.'+i)
+        #         Output.append(row)
+        #         if func_flag:
+        #             row = []
+        #             for i in fields:
+        #                 fn = i[:3].lower()
+        #                 fld = i[4]
+        #                 # print(fn)
+        #                 if fn == 'max' : val = self.max(self.table_field[tableName][fld])
+        #                 if fn == 'min' : val = self.min(self.table_field[tableName][fld])
+        #                 if fn == 'sum' : val = self.sum(self.table_field[tableName][fld])
+        #                 if fn == 'avg' : val = self.avg(self.table_field[tableName][fld])
+        #                 row.append(val)       
+        #             Output.append(row)
+        #         else:
+        #             for i in range(entries):
+        #                 row = []
+        #                 for j in fields:
+        #                     row.append(self.table_field[tableName][j][i])
+        #                 Output.append(row)    
+                
+        #         for i in range(len(Output)):
+        #             for j in Output[i]:
+        #                 print(j,end=(', ' if j != Output[i][-1] else ' '))
+        #             print("")
+        #     except Exception as e :
+        #         print("\033[91mField Not Found!! check your query\033[00m")
+        #         print("Error: ", e)
             # sets = [set() for i in range(len(tables))]
             # for ind, key in enumerate(tables):
             #     for j in self.meta[key]:
