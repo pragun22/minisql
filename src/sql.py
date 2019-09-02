@@ -96,7 +96,6 @@ class sql():
         if len(tables) ==1 :
             tableName = tables[0]
             fields = self.meta[tableName] if fields[0]=='*' else fields
-
             try:
                 Output = []
                 entries = len(self.table_field[tableName][fields[0]]) if not func_flag else 1
@@ -131,55 +130,33 @@ class sql():
                 print("\033[91mField Not Found!! check your query\033[00m")
                 print("Error: ", e)
         else:
-                
-            sets = [set() for i in range(len(tables))]
-            for ind, key in enumerate(tables):
-                for j in self.meta[key]:
-                    sets[ind].add(j)
-            common_field = sets[0]
-            all_field = sets[0]
-            for i in range(1, len(tables)):
-                common_field = common_field & sets[i]
-                all_field = all_field | sets[i]
-            com_var = [set() for i in range(len(common_field))]
-            for table in tables:
-                for ind, p in enumerate(common_field):
-                    for j in self.table_field[table][p]:
-                        com_var[ind].add(j)
-            # print(com_var)    
-            fin_table = []
-            row  = []
-            fields = all_field if fields[0]=='*' else fields
-            for i in all_field:
-                for j in tables:
-                    if i in self.table_field[j]:
-                        row.append(j+'.'+i)
-                        break
-            fin_table.append(row)
-            for i in range(len(com_var[0])):
-                row = []
-                for j in all_field:
-                    for p in tables:
-                        if j in self.table_field[p]:
-                            row.append(self.table_field[p][j][i])
-                            break
-                fin_table.append(row)
-            # for i in range(len(fin_table)):
-            #     for j in fin_table[i]:
-            #         print(j,end=(', ' if j != fin_table[i][-1] else ' '))
-            #     print("")
             Output = []
-            for i in range(len(fin_table)):
-                row = []
-                for ind, j in enumerate(fin_table[i]):
-                    if fin_table[0][ind][-1] in fields:
-                        row.append(j)
-                Output.append(row)
+            row = []
+            for i in tables:
+                for j in self.meta[i]:
+                    row.append(i+'.'+j)
+            Output.append(row)        
+            ent1 = len(self.table_field[tables[0]][self.meta[tables[0]][0]]) if not func_flag else 1
+            ent2 = len(self.table_field[tables[1]][self.meta[tables[1]][0]]) if not func_flag else 1
+            f1 = len(self.meta[tables[0]])
+            f2 = len(self.meta[tables[1]])
+            col = [False for i in range(f1+f2)] if fields[0]!='*' else [True for i in range(f1+f2)]
+            for ind, val in enumerate(self.meta[tables[0]]):
+                if val in fields: col[ind] = True                
+            for ind, val in enumerate(self.meta[tables[1]]):
+                if val in fields: col[f1+ind] = True                
+            for i in range(ent1):
+                for j in range(ent2):
+                    row = []
+                    for p in self.meta[tables[0]]:
+                        row.append(self.table_field[tables[0]][p][i])
+                    for p in self.meta[tables[1]]:
+                        row.append(self.table_field[tables[1]][p][j])
+                    Output.append(row)
             for i in range(len(Output)):
-                for j in Output[i]:
-                    print(j,end=(', ' if j != Output[i][-1] else ' '))
-                print("")
-
+                for ind, j in enumerate(Output[i]):
+                    if col[ind] : print(j,end=(', ' if j != Output[i][-1] else ' '))
+                print("")  
 
 # Code begins from here
 if len(sys.argv) < 2 :
@@ -187,3 +164,55 @@ if len(sys.argv) < 2 :
     exit(0)
 query = ' '.join(sys.argv[1:])
 sql(query)
+
+
+
+'''Use Later'''
+            # sets = [set() for i in range(len(tables))]
+            # for ind, key in enumerate(tables):
+            #     for j in self.meta[key]:
+            #         sets[ind].add(j)
+            # common_field = sets[0]
+            # all_field = sets[0]
+            # for i in range(1, len(tables)):
+            #     common_field = common_field & sets[i]
+            #     all_field = all_field | sets[i]
+            # com_var = [set() for i in range(len(common_field))]
+            # for table in tables:
+            #     for ind, p in enumerate(common_field):
+            #         for j in self.table_field[table][p]:
+            #             com_var[ind].add(j)
+            # # print(com_var)    
+            # fin_table = []
+            # row  = []
+            # fields = all_field if fields[0]=='*' else fields
+            # for i in all_field:
+            #     for j in tables:
+            #         if i in self.table_field[j]:
+            #             row.append(j+'.'+i)
+            #             break
+            # fin_table.append(row)
+            # for i in range(len(com_var[0])):
+            #     row = []
+            #     for j in all_field:
+            #         for p in tables:
+            #             if j in self.table_field[p]:
+            #                 row.append(self.table_field[p][j][i])
+            #                 break
+            #     fin_table.append(row)
+            # # for i in range(len(fin_table)):
+            # #     for j in fin_table[i]:
+            # #         print(j,end=(', ' if j != fin_table[i][-1] else ' '))
+            # #     print("")
+            # Output = []
+            # for i in range(len(fin_table)):
+            #     row = []
+            #     for ind, j in enumerate(fin_table[i]):
+            #         if fin_table[0][ind][-1] in fields:
+            #             row.append(j)
+            #     Output.append(row)
+            # for i in range(len(Output)):
+            #     for j in Output[i]:
+            #         print(j,end=(', ' if j != Output[i][-1] else ' '))
+            #     print("")
+
