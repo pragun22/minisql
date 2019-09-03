@@ -216,6 +216,9 @@ class sql():
                         new_mat.append(j+p)    
                 runtable = copy.deepcopy(new_mat)
             join_flag = False
+            nw_cond = []
+            nw_arg1 = []
+            nw_arg2 = []
             for ind,key in enumerate(self.arg2):
                 if not self.isInt(key):
                     self.join.append(key)
@@ -223,9 +226,17 @@ class sql():
                     col[self.colnum[self.join[1]]] = 0
                     Output[0][self.colnum[self.join[0]]] = self.join[0].split('.')[1]
                     join_flag = True
+                else:
+                    nw_arg1.append(self.arg1[ind])
+                    nw_arg2.append(self.arg2[ind])
+                    nw_cond.append(self.cond[ind])
+                    
+            self.cond = nw_cond        
+            self.arg1 = nw_arg1        
+            self.arg2 = nw_arg2        
             if join_flag : runtable = self.joinTable(runtable, self.colnum[self.join[0]], self.colnum[self.join[1]])
             for i in runtable:
-                if len(self.cond)>0 and not join_flag:
+                if len(self.cond)>0:
                     cond_flg = True if self.op_flag==1 else False
                     exit_flag = True
                     for ind,key in enumerate(i):
