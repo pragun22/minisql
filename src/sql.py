@@ -19,6 +19,8 @@ class sql():
         self.func = ['max','min','avg','sum']
         self.operator = ['>=', '<=', '=', '>', '<']
         self.op_flag = 0
+        self.arg1 = []
+        self.arg2 = []
         self.cond = []
         # self.operator = "< > >= <= ="
         self.init_meta() 
@@ -80,32 +82,43 @@ class sql():
         self.distinct = True if self.toks[0] == 'distinct' else False
         if len(self.toks) > (4 if self.distinct else 3):
             self.where = True
-        temp = re.split('[<=> ]',self.toks[4][6:]) if self.distinct and self.where else re.split('[<=> ]',self.toks[3][6:])
-        # temp = self.toks[4][6:] if self.distinct else self.toks[3][6:].split()
-        where_fields = []
-        for i in temp:
-            if i=="":continue
-            elif i.lower()=="and": self.op_flag = 1
-            elif i.lower()=="or": self.op_flag = 2
-            else :where_fields.append(i)
-        temp = self.toks[4][6:] if self.distinct else self.toks[3][6:].lower()
-        if self.op_flag ==0 :
-            for i in self.operator:
-                if i in temp:
-                    self.cond.append(i)
-                    break
-        else:
-            i1 = temp.find("and") if self.op_flag==1 else temp.find("or")
-            for i in self.operator:
-                if i in temp[:i1]:
-                    self.cond.append(i)
-                    break
-            for i in self.operator:
-                if i in temp[i1+1:]:
-                    self.cond.append(i)
-                    break
-        print(self.cond)        
-        print(where_fields)
+        if self.where:
+
+            try:
+                temp = re.split('[<=> ]',self.toks[4][6:]) if self.distinct and self.where else re.split('[<=> ]',self.toks[3][6:])
+                # temp = self.toks[4][6:] if self.distinct else self.toks[3][6:].split()
+                where_fields = []
+                for i in temp:
+                    if i=="":continue
+                    elif i.lower()=="and": self.op_flag = 1
+                    elif i.lower()=="or": self.op_flag = 2
+                    else :where_fields.append(i)
+                self.arg1.append(where_fields[0])        
+                self.arg2.append(where_fields[1])        
+                temp = self.toks[4][6:] if self.distinct else self.toks[3][6:].lower()
+                if self.op_flag ==0 :
+                    for i in self.operator:
+                        if i in temp:
+                            self.cond.append(i)
+                            break
+                else:
+                    self.arg1.append(where_fields[2])
+                    self.arg2.append(where_fields[3])
+                    i1 = temp.find("and") if self.op_flag==1 else temp.find("or")
+                    for i in self.operator:
+                        if i in temp[:i1]:
+                            self.cond.append(i)
+                            break
+                    for i in self.operator:
+                        if i in temp[i1+1:]:
+                            self.cond.append(i)
+                            break
+                # print(self.cond)        
+                # print(self.arg1,self.arg2)
+            except Exception as e:
+                print("Error in query")
+                print("Error: ",e)
+                exit(0)
         tables = self.toks[3].split(',') if self.distinct else self.toks[2].split(',')
         tables = [ i.strip()  for i in tables]
         try:
@@ -177,8 +190,26 @@ class sql():
                     for p in self.mat[tables[i]]:
                         new_mat.append(j+p)    
                 runtable = copy.deepcopy(new_mat)
+            # if len(self.cond) > 0:
+
             for i in runtable:
-                Output.append(i)
+                if len(self.cond)>0:
+                    cond_flg = True
+                    exit_flag = True
+                    for ind,key in enumerate(i):
+                        for ln, args, in enumerate(self.arg1):
+                            if args in Output[0][ind]:
+                                exit_flag = False
+                                if self.cond[ln] == '>' and col[ind]: cond_flg = True if int(key) > int(self.arg2[ln]) else False
+                                if self.cond[ln] == '<' and col[ind]: cond_flg = True if int(key) < int(self.arg2[ln]) else False
+                                if self.cond[ln] == '>='and col[ind]: cond_flg = True if int(key) >= int(self.arg2[ln]) else False
+                                if self.cond[ln] == '<=' and col[ind]: cond_flg = True if int(key) <= int(self.arg2[ln]) else False
+                                if self.cond[ln] == '=' and col[ind]: cond_flg = True if int(key) == int(self.arg2[ln]) else False
+                    if cond_flg: Output.append(i)                    
+                    if exit_flag:
+                        print("Error: check your Where Query")
+                        exit(0)
+                else : Output.append(i)
         else:
             flag_bool = defaultdict(lambda : False)
             row = []
