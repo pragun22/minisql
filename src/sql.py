@@ -194,17 +194,38 @@ class sql():
 
             for i in runtable:
                 if len(self.cond)>0:
-                    cond_flg = True
+                    cond_flg = True if self.op_flag==1 else False
                     exit_flag = True
                     for ind,key in enumerate(i):
                         for ln, args, in enumerate(self.arg1):
                             if args in Output[0][ind]:
                                 exit_flag = False
-                                if self.cond[ln] == '>' and col[ind]: cond_flg = True if int(key) > int(self.arg2[ln]) else False
-                                if self.cond[ln] == '<' and col[ind]: cond_flg = True if int(key) < int(self.arg2[ln]) else False
-                                if self.cond[ln] == '>='and col[ind]: cond_flg = True if int(key) >= int(self.arg2[ln]) else False
-                                if self.cond[ln] == '<=' and col[ind]: cond_flg = True if int(key) <= int(self.arg2[ln]) else False
-                                if self.cond[ln] == '=' and col[ind]: cond_flg = True if int(key) == int(self.arg2[ln]) else False
+                                if self.cond[ln] == '>' and col[ind]:
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(key) > int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(key) > int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '<' and col[ind]: 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(key) < int(self.arg2[ln]) else False)
+                                    else :
+                                        cond_flg = cond_flg or (True if int(key) < int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '>='and col[ind]: 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(key) >= int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(key) >= int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '<='and col[ind]: 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(key) <= int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(key) <= int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '=' and col[ind]: 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(key) == int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(key) == int(self.arg2[ln]) else False)
+                    
                     if cond_flg: Output.append(i)                    
                     if exit_flag:
                         print("Error: check your Where Query")
