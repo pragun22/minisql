@@ -22,9 +22,31 @@ class sql():
         self.arg1 = []
         self.arg2 = []
         self.cond = []
+        self.join = []
+        self.colnum = {}
         # self.operator = "< > >= <= ="
         self.init_meta() 
         self.parser()
+    def joinTable(self,table,field1,field2):
+        out = []
+        for row in table:
+            if row[field1] == row[field2]: 
+                # fl = False
+                # nwr = []
+                # for ind,key in enumerate(row):
+                #     if (ind == field1 or ind == field2):
+                #         if not fl : nwr.append(key)
+                #         fl = True
+                #     else:
+                #         nwr.append(key)
+                out.append(row)        
+        return out
+    def isInt(self,s):
+        try: 
+            int(s)
+            return True
+        except ValueError:
+            return False
     def sum(self,data):
         ret = 0
         for i in data : ret += int(i)
@@ -168,6 +190,8 @@ class sql():
                     if fd in temp : flag = True 
                 col.append(flag)
         Output.append(row)
+        for ind,key in enumerate(row):
+            self.colnum[key] = ind
         if(fields[0]=='*'):
             for i in range(len(col)): col[i] = True
         else:
@@ -182,6 +206,7 @@ class sql():
                 if not flg:
                     print("Error: Field not present")
                     exit(0)
+       
         if not func_flag:
             runtable = copy.deepcopy(self.mat[tables[0]])
             for i in range(1, len(tables)):
@@ -190,10 +215,17 @@ class sql():
                     for p in self.mat[tables[i]]:
                         new_mat.append(j+p)    
                 runtable = copy.deepcopy(new_mat)
-            # if len(self.cond) > 0:
-
+            join_flag = False
+            for ind,key in enumerate(self.arg2):
+                if not self.isInt(key):
+                    self.join.append(key)
+                    self.join.append(self.arg1[ind])
+                    col[self.colnum[self.join[1]]] = 0
+                    Output[0][self.colnum[self.join[0]]] = self.join[0].split('.')[1]
+                    join_flag = True
+            if join_flag : runtable = self.joinTable(runtable, self.colnum[self.join[0]], self.colnum[self.join[1]])
             for i in runtable:
-                if len(self.cond)>0:
+                if len(self.cond)>0 and not join_flag:
                     cond_flg = True if self.op_flag==1 else False
                     exit_flag = True
                     for ind,key in enumerate(i):
@@ -263,89 +295,3 @@ if len(sys.argv) < 2 :
     exit(0)
 query = ' '.join(sys.argv[1:])
 sql(query)
-
-'''Use Later'''
-        # if len(tables) == 10 :
-        #     tableName = tables[0]
-        #     fields = self.meta[tableName] if fields[0]=='*' else fields
-        #     try:
-        #         Output = []
-        #         entries = len(self.table_field[tableName][fields[0]]) if not func_flag else 1
-        #         row = []
-        #         for i in fields:
-        #             row.append(tableName+'.'+i)
-        #         Output.append(row)
-        #         if func_flag:
-        #             row = []
-        #             for i in fields:
-        #                 fn = i[:3].lower()
-        #                 fld = i[4]
-        #                 # print(fn)
-        #                 if fn == 'max' : val = self.max(self.table_field[tableName][fld])
-        #                 if fn == 'min' : val = self.min(self.table_field[tableName][fld])
-        #                 if fn == 'sum' : val = self.sum(self.table_field[tableName][fld])
-        #                 if fn == 'avg' : val = self.avg(self.table_field[tableName][fld])
-        #                 row.append(val)       
-        #             Output.append(row)
-        #         else:
-        #             for i in range(entries):
-        #                 row = []
-        #                 for j in fields:
-        #                     row.append(self.table_field[tableName][j][i])
-        #                 Output.append(row)    
-                
-        #         for i in range(len(Output)):
-        #             for j in Output[i]:
-        #                 print(j,end=(', ' if j != Output[i][-1] else ' '))
-        #             print("")
-        #     except Exception as e :
-        #         print("\033[91mField Not Found!! check your query\033[00m")
-        #         print("Error: ", e)
-            # sets = [set() for i in range(len(tables))]
-            # for ind, key in enumerate(tables):
-            #     for j in self.meta[key]:
-            #         sets[ind].add(j)
-            # common_field = sets[0]
-            # all_field = sets[0]
-            # for i in range(1, len(tables)):
-            #     common_field = common_field & sets[i]
-            #     all_field = all_field | sets[i]
-            # com_var = [set() for i in range(len(common_field))]
-            # for table in tables:
-            #     for ind, p in enumerate(common_field):
-            #         for j in self.table_field[table][p]:
-            #             com_var[ind].add(j)
-            # # print(com_var)    
-            # fin_table = []
-            # row  = []
-            # fields = all_field if fields[0]=='*' else fields
-            # for i in all_field:
-            #     for j in tables:
-            #         if i in self.table_field[j]:
-            #             row.append(j+'.'+i)
-            #             break
-            # fin_table.append(row)
-            # for i in range(len(com_var[0])):
-            #     row = []
-            #     for j in all_field:
-            #         for p in tables:
-            #             if j in self.table_field[p]:
-            #                 row.append(self.table_field[p][j][i])
-            #                 break
-            #     fin_table.append(row)
-            # # for i in range(len(fin_table)):
-            # #     for j in fin_table[i]:
-            # #         print(j,end=(', ' if j != fin_table[i][-1] else ' '))
-            # #     print("")
-            # Output = []
-            # for i in range(len(fin_table)):
-            #     row = []
-            #     for ind, j in enumerate(fin_table[i]):
-            #         if fin_table[0][ind][-1] in fields:
-            #             row.append(j)
-            #     Output.append(row)
-            # for i in range(len(Output)):
-            #     for j in Output[i]:
-            #         print(j,end=(', ' if j != Output[i][-1] else ' '))
-            #     print("")
-
