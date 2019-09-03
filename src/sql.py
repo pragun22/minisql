@@ -2,6 +2,7 @@ import sys
 import sqlparse
 import csv
 import copy 
+import re
 from collections import defaultdict 
 class sql():
 
@@ -16,7 +17,10 @@ class sql():
         self.mat = {}
         self.db_dir = "../files/" 
         self.func = ['max','min','avg','sum']
-
+        self.operator = ['>=', '<=', '=', '>', '<']
+        self.op_flag = 0
+        self.cond = []
+        # self.operator = "< > >= <= ="
         self.init_meta() 
         self.parser()
     def sum(self,data):
@@ -76,6 +80,32 @@ class sql():
         self.distinct = True if self.toks[0] == 'distinct' else False
         if len(self.toks) > (4 if self.distinct else 3):
             self.where = True
+        temp = re.split('[<=> ]',self.toks[4][6:]) if self.distinct and self.where else re.split('[<=> ]',self.toks[3][6:])
+        # temp = self.toks[4][6:] if self.distinct else self.toks[3][6:].split()
+        where_fields = []
+        for i in temp:
+            if i=="":continue
+            elif i.lower()=="and": self.op_flag = 1
+            elif i.lower()=="or": self.op_flag = 2
+            else :where_fields.append(i)
+        temp = self.toks[4][6:] if self.distinct else self.toks[3][6:].lower()
+        if self.op_flag ==0 :
+            for i in self.operator:
+                if i in temp:
+                    self.cond.append(i)
+                    break
+        else:
+            i1 = temp.find("and") if self.op_flag==1 else temp.find("or")
+            for i in self.operator:
+                if i in temp[:i1]:
+                    self.cond.append(i)
+                    break
+            for i in self.operator:
+                if i in temp[i1+1:]:
+                    self.cond.append(i)
+                    break
+        print(self.cond)        
+        print(where_fields)
         tables = self.toks[3].split(',') if self.distinct else self.toks[2].split(',')
         tables = [ i.strip()  for i in tables]
         try:
