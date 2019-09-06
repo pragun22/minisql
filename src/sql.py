@@ -4,6 +4,7 @@ import csv
 import copy 
 import re
 from collections import defaultdict 
+from sqlparse.sql import Where, Comparison, Parenthesis
 class sql():
 
     def __init__(self, query):
@@ -27,19 +28,24 @@ class sql():
         # self.operator = "< > >= <= ="
         self.init_meta() 
         self.parser()
-    def joinTable(self,table,field1,field2):
+    def joinTable(self,table,field1,field2, cond):
         out = []
         for row in table:
-            if row[field1] == row[field2]: 
-                # fl = False
-                # nwr = []
-                # for ind,key in enumerate(row):
-                #     if (ind == field1 or ind == field2):
-                #         if not fl : nwr.append(key)
-                #         fl = True
-                #     else:
-                #         nwr.append(key)
-                out.append(row)        
+            if cond == '=':
+                if int(row[field1]) == int(row[field2]): 
+                    out.append(row)
+            elif cond == '>':
+                if int(row[field1]) > int(row[field2]): 
+                    out.append(row)
+            elif cond == '<':
+                if int(row[field1]) < int(row[field2]): 
+                    out.append(row)
+            elif cond == '>=':
+                if int(row[field1]) >= int(row[field2]): 
+                    out.append(row)
+            elif cond == '<=':
+                if int(row[field1]) <= int(row[field2]): 
+                    out.append(row)
         return out
     def isInt(self,s):
         try: 
@@ -105,10 +111,8 @@ class sql():
         if len(self.toks) > (4 if self.distinct else 3):
             self.where = True
         if self.where:
-
             try:
                 temp = re.split('[<=> ]',self.toks[4][6:]) if self.distinct and self.where else re.split('[<=> ]',self.toks[3][6:])
-                # temp = self.toks[4][6:] if self.distinct else self.toks[3][6:].split()
                 where_fields = []
                 for i in temp:
                     if i=="":continue
@@ -206,7 +210,8 @@ class sql():
                 if not flg:
                     print("Error: Field not present")
                     exit(0)
-       
+        for i in self.arg1:
+            pass       
         if not func_flag:
             runtable = copy.deepcopy(self.mat[tables[0]])
             for i in range(1, len(tables)):
@@ -219,56 +224,91 @@ class sql():
             nw_cond = []
             nw_arg1 = []
             nw_arg2 = []
+            join_cond = ""
             for ind,key in enumerate(self.arg2):
                 if not self.isInt(key):
-                    self.join.append(key)
-                    self.join.append(self.arg1[ind])
-                    col[self.colnum[self.join[1]]] = 0
-                    Output[0][self.colnum[self.join[0]]] = self.join[0].split('.')[1]
-                    join_flag = True
+                    try : 
+                        self.join.append(key)
+                        self.join.append(self.arg1[ind])
+                        if self.cond[ind] == '=':
+                            col[self.colnum[self.join[1]]] = 0
+                            Output[0][self.colnum[self.join[0]]] = self.join[0].split('.')[1]
+                        join_flag = True
+                        join_cond = self.cond[ind]
+                        runtable = self.joinTable(runtable, self.colnum[self.arg1[ind]], self.colnum[key], join_cond)
+                    except Exception as e:
+                        print("Key Error : ",e)
+                        exit(0)
                 else:
                     nw_arg1.append(self.arg1[ind])
                     nw_arg2.append(self.arg2[ind])
                     nw_cond.append(self.cond[ind])
-                    
-            self.cond = nw_cond        
-            self.arg1 = nw_arg1        
-            self.arg2 = nw_arg2        
-            if join_flag : runtable = self.joinTable(runtable, self.colnum[self.join[0]], self.colnum[self.join[1]])
+            if join_flag:        
+                self.cond = nw_cond        
+                self.arg1 = nw_arg1        
+                self.arg2 = nw_arg2        
+
             for i in runtable:
                 if len(self.cond)>0:
                     cond_flg = True if self.op_flag==1 else False
                     exit_flag = True
                     for ind,key in enumerate(i):
-                        for ln, args, in enumerate(self.arg1):
-                            if args in Output[0][ind]:
+                        for ln, args in enumerate(self.arg1):
+                            if not self.isInt(args) and args in Output[0][ind]:
                                 exit_flag = False
-                                if self.cond[ln] == '>' and col[ind]:
+                                if self.cond[ln] == '>' :
                                     if self.op_flag == 1:
                                         cond_flg = cond_flg and (True if int(key) > int(self.arg2[ln]) else False)
                                     else:
                                         cond_flg = cond_flg or (True if int(key) > int(self.arg2[ln]) else False)
-                                if self.cond[ln] == '<' and col[ind]: 
+                                if self.cond[ln] == '<' : 
                                     if self.op_flag == 1:
                                         cond_flg = cond_flg and (True if int(key) < int(self.arg2[ln]) else False)
                                     else :
                                         cond_flg = cond_flg or (True if int(key) < int(self.arg2[ln]) else False)
-                                if self.cond[ln] == '>='and col[ind]: 
+                                if self.cond[ln] == '>=': 
                                     if self.op_flag == 1:
                                         cond_flg = cond_flg and (True if int(key) >= int(self.arg2[ln]) else False)
                                     else:
                                         cond_flg = cond_flg or (True if int(key) >= int(self.arg2[ln]) else False)
-                                if self.cond[ln] == '<='and col[ind]: 
+                                if self.cond[ln] == '<=': 
                                     if self.op_flag == 1:
                                         cond_flg = cond_flg and (True if int(key) <= int(self.arg2[ln]) else False)
                                     else:
                                         cond_flg = cond_flg or (True if int(key) <= int(self.arg2[ln]) else False)
-                                if self.cond[ln] == '=' and col[ind]: 
+                                if self.cond[ln] == '=' : 
                                     if self.op_flag == 1:
                                         cond_flg = cond_flg and (True if int(key) == int(self.arg2[ln]) else False)
                                     else:
                                         cond_flg = cond_flg or (True if int(key) == int(self.arg2[ln]) else False)
-                    
+                            elif self.isInt(args) and self.isInt(self.arg2[ln]): # for general queries such as 2 > 3 duh!
+                                exit_flag = False
+                                if self.cond[ln] == '>' :
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(args) > int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(args) > int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '<' : 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(args) < int(self.arg2[ln]) else False)
+                                    else :
+                                        cond_flg = cond_flg or (True if int(args) < int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '>=': 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(args) >= int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(args) >= int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '<=': 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(args) <= int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(args) <= int(self.arg2[ln]) else False)
+                                if self.cond[ln] == '=' : 
+                                    if self.op_flag == 1:
+                                        cond_flg = cond_flg and (True if int(args) == int(self.arg2[ln]) else False)
+                                    else:
+                                        cond_flg = cond_flg or (True if int(args) == int(self.arg2[ln]) else False)
+                                       
                     if cond_flg: Output.append(i)                    
                     if exit_flag:
                         print("Error: check your Where Query")
